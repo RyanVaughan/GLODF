@@ -87,9 +87,8 @@ def ptdf_from_slides(sys):
     # return ptdf[:,1:]
     
 if __name__ == "__main__":
-    
+    np.set_printoptions(precision=5)
     sys = get_sys_problem10()
-    # sys = get_sys_problem10_no4()
 
     # dc or ac
     use_dc = False
@@ -114,4 +113,21 @@ if __name__ == "__main__":
     f = calculate_line_flows(sys, v, theta)
     print("power flows before:\n" + str(f[0]))
     flow_after = flow_after_lodf(sys, 4, f[0])
-    print("flow after single outage:\n" + str(flow_after))
+    print("take out line for with LODF:\n" + str(flow_after))
+    
+    sys = get_sys_problem10_no4()
+    if use_dc:
+        # Y = create_Ybus(sys)
+        [v, theta, P, Q] = solve_dc(sys)
+        #solve_dc_output(sys, v, theta, P, Q)
+    else:
+        Y = create_Ybus(sys)
+        [V, S] = solve_ac(sys, Y)
+        # solve_ac_output(sys, V, S)
+        v = np.abs(V)
+        theta = np.angle(V)
+
+    f = calculate_line_flows(sys, v, theta)
+    print("system solved without line 4:\n" + str(np.insert(f[0], 3, 0)))
+    
+    
