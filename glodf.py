@@ -5,6 +5,7 @@ from pwr_obj import get_sys_problem10, get_sys_example3_11, get_sys_illinois, ge
 from solve_ac import solve_ac, create_Ybus, solve_ac_output, calculate_line_flows
 from solve_dc import solve_dc, solve_dc_output
 
+
 # return L x L diagonal matrix
 def get_branch_susceptance(sys):
     return np.diag(1/sys.line.X)
