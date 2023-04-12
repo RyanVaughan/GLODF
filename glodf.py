@@ -109,33 +109,36 @@ def check_single_outage():
     print("system solved without line 4:\n" + str(np.insert(f[0], 3, 0)))
 
 def glodf(sys, change_lines):
-    
     change_lines = np.atleast_1d(change_lines)
     
-    num_line = np.size(sys.line.no)
-    num_change = np.size(change_lines)
-    Phi = np.zeros((num_change, num_change))
-    right_side = np.zeros((num_change, num_line))
+    ########
+    # copy from PTDF
+    psi = get_isf(sys)
+    bfrom = sys.line.bfrom[change_lines - 1] - 2
+    bto   = sys.line.bto[change_lines   - 1] - 2
+    phi = psi[:,bfrom] - psi[:,bto]
     
-    for i in range(num_change):
-        phi = ptdf(sys, change_lines[i])
-        Phi[:,i] = phi[change_lines-1]
-        right_side[i,:] = phi
-        
-    left_side = (np.eye(num_change) - Phi).T
+    # right side of equation is all lines
+    right_side = phi.T
+    
+    # left side is identity - Phi of change lines
+    Phi = right_side[:,change_lines-1]
+    left_side = (np.eye(np.shape(Phi)[0]) - Phi)
+    
     xi = np.linalg.solve(left_side, right_side)
     
     return xi
-
 
 def flow_after_glodf(sys, change_lines, flow_before):
     change_lines = np.atleast_1d(change_lines)
 
     xi = glodf(sys, change_lines)
     
-    factor = xi.T @ flow_before[change_lines-1]
-    flow_after = flow_before + factor
+    #GLODFs times flow before
+    delta_flow = xi.T @ flow_before[change_lines-1]
+    flow_after = flow_before + delta_flow
     
+    # ensure lines that are out have no flow
     flow_after[change_lines-1] = 0
     
     return flow_after
