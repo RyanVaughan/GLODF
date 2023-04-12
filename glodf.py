@@ -2,7 +2,7 @@
 import numpy as np
 from pwr_obj import pwr_sys
 from pwr_obj import get_sys_problem10, get_sys_example3_11, \
-    get_sys_illinois, get_sys_problem10_no4, get_sys_problem10_no45
+        get_sys_illinois
 from solve_ac import solve_ac, create_Ybus, solve_ac_output, calculate_line_flows
 from solve_dc import solve_dc, solve_dc_output
 
@@ -64,7 +64,7 @@ def flow_after_lodf(sys, change_line, flow_before):
     
     return flow_after
 
-def check_single_outage():
+def check_single_outage(outage):
     print("\n\nChecking Single outage code...\n")
     sys = get_sys_problem10()
 
@@ -90,10 +90,10 @@ def check_single_outage():
 
     f = calculate_line_flows(sys, v, theta)
     print("power flows before:\n" + str(f[0]))
-    flow_after = flow_after_lodf(sys, 4, f[0])
-    print("take out line for with LODF:\n" + str(flow_after))
+    flow_after = flow_after_lodf(sys, outage, f[0])
+    print("take out line with LODF:\n" + str(flow_after))
     
-    sys = get_sys_problem10_no4()
+    sys.line.delete(outage)
     if use_dc:
         # Y = create_Ybus(sys)
         [v, theta, P, Q] = solve_dc(sys)
@@ -106,7 +106,7 @@ def check_single_outage():
         theta = np.angle(V)
 
     f = calculate_line_flows(sys, v, theta)
-    print("system solved without line 4:\n" + str(np.insert(f[0], 3, 0)))
+    print("system solved without line 4:\n" + str(np.insert(f[0], outage-1, 0)))
 
 def glodf(sys, change_lines):
     change_lines = np.atleast_1d(change_lines)
@@ -143,12 +143,13 @@ def flow_after_glodf(sys, change_lines, flow_before):
     
     return flow_after
     
-def check_multi_outage():
+def check_multi_outage(outages):
+    outages = np.array(outages)
     print("\n\nChecking multi outage code...\n")
     sys = get_sys_problem10()
 
     # dc or ac
-    use_dc = False
+    use_dc = True
     
     if use_dc:
         # Y = create_Ybus(sys)
@@ -163,10 +164,10 @@ def check_multi_outage():
 
     f = calculate_line_flows(sys, v, theta)
     print("power flows before:\n" + str(f[0]))
-    flow_after = flow_after_glodf(sys, [4,5], f[0])
-    print("take out line for with GLODF:\n" + str(flow_after))
+    flow_after = flow_after_glodf(sys, outages, f[0])
+    print("take out lines with GLODF:\n" + str(flow_after))
     
-    sys = get_sys_problem10_no45()
+    sys.line.delete(outages)
     if use_dc:
         # Y = create_Ybus(sys)
         [v, theta, P, Q] = solve_dc(sys)
@@ -179,7 +180,13 @@ def check_multi_outage():
         theta = np.angle(V)
 
     f = calculate_line_flows(sys, v, theta)
-    print("system solved without line 4 or 5:\n" + str(np.insert(f[0], [3,3], [0,0])))
+    
+    flows_insert_zero = f[0]
+    for idx in outages:
+        flows_insert_zero = np.insert(flows_insert_zero, idx-1, 0)
+        
+    print("system solved without lines " + str(outages) + ":\n" + str(flows_insert_zero))
+    # print("system solved without line 4 or 5:\n" + str(np.insert(f[0], outages-1, [0,0])))
 
 '''
 ###############################################################################
@@ -209,7 +216,14 @@ def ptdf_from_slides(sys):
 if __name__ == "__main__":
     np.set_printoptions(precision=5)
     
-    check_single_outage()
+    # check_single_outage(3)
     
-    check_multi_outage()
+    # TODO
+    # dont choose a  line connected to slack bus
+    # check for islands
+    
+    # only combos that dont give islands and dont use slack bus
+    # 3,5  4,5  5,6  5,7  
+    # no three combos with this system    
+    check_multi_outage([5,7])
     

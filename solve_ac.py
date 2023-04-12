@@ -88,11 +88,12 @@ def solve_ac(sys, Y):
     # print(str(0) + "th iteration: x = " + str(x))
     
     iters = 0 # iteration number
-    for i in range(50): #loop for maximum iterations
+    max_iters = 1000
+    for i in range(max_iters): #loop for maximum iterations
         # xprev = x # store previous value in order to determine convergence
         J = jacobian(sys, Y, x[num_bus:2*num_bus], x[0:num_bus])
         residue = residuals(sys, Y, x[num_bus:2*num_bus] * np.exp(x[0:num_bus]*1.0j))
-        if (np.allclose(residue, 0, atol=0.000005)): break
+        if (np.allclose(residue, 0, atol=0.00005)): break
         delta = np.linalg.solve(J, residue)
         
         # expand delta by filling zeros for elements that arent being updated
@@ -104,6 +105,8 @@ def solve_ac(sys, Y):
         
         iters += 1
     
+    if iters == max_iters:
+        print("timed out")
     print("took " + str(iters+1) + " iterations to solve the system")
     V = x[num_bus:2*num_bus] * np.exp(x[0:num_bus]*1.0j)
     S = V * np.conj(np.dot(Y, V))    
