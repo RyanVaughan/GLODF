@@ -1,7 +1,8 @@
 
 import numpy as np
 from pwr_obj import pwr_sys
-from pwr_obj import get_sys_problem10, get_sys_example3_11, get_sys_illinois, get_sys_problem10_no4
+from pwr_obj import get_sys_problem10, get_sys_example3_11, \
+    get_sys_illinois, get_sys_problem10_no4, get_sys_problem10_no45
 from solve_ac import solve_ac, create_Ybus, solve_ac_output, calculate_line_flows
 from solve_dc import solve_dc, solve_dc_output
 
@@ -62,33 +63,9 @@ def flow_after_lodf(sys, change_line, flow_before):
     flow_after[change_line-1] = 0
     
     return flow_after
-    
-###############################################################################
-# from slides
-def ptdf_from_slides(sys):
-    num_line = np.size(sys.line.no)
-    num_bus = np.size(sys.bus.no)
-    
-    ptdf = np.zeros((num_line, num_bus), dtype=np.complex128)
-    # ptdf = np.zeros((num_line, num_bus))
-    
-    Z = np.linalg.inv(create_Ybus(sys))
-    # X = np.imag(np.linalg.inv(create_Ybus(sys.line, sys.bus)))
-    
-    for i in range(num_bus):    
-        for j in range(num_line):
-            bfrom = sys.line.bfrom[j] - 1
-            bto   = sys.line.bto[j] - 1
-            z = sys.line.R[j] + 1j*sys.line.X[j]
-            # b = 1 / sys.line.X[j]
-            ptdf[j,i] = (Z[bfrom, i] - Z[bto, i]) / z
-            # ptdf[j,i] = (X[bfrom, i] - X[bto, i]) * b
 
-    return np.real(ptdf[:,1:])
-    # return ptdf[:,1:]
-    
-if __name__ == "__main__":
-    np.set_printoptions(precision=5)
+def check_single_outage():
+    print("\n\nChecking Single outage code...\n")
     sys = get_sys_problem10()
 
     # dc or ac
@@ -130,5 +107,106 @@ if __name__ == "__main__":
 
     f = calculate_line_flows(sys, v, theta)
     print("system solved without line 4:\n" + str(np.insert(f[0], 3, 0)))
+
+def glodf(sys, change_lines):
     
+    change_lines = np.atleast_1d(change_lines)
+    
+    num_line = np.size(sys.line.no)
+    num_change = np.size(change_lines)
+    Phi = np.zeros((num_change, num_change))
+    right_side = np.zeros((num_change, num_line))
+    
+    for i in range(num_change):
+        phi = ptdf(sys, change_lines[i])
+        Phi[:,i] = phi[change_lines-1]
+        right_side[i,:] = phi
+        
+    left_side = (np.eye(num_change) - Phi).T
+    xi = np.linalg.solve(left_side, right_side)
+    
+    return xi
+
+
+def flow_after_glodf(sys, change_lines, flow_before):
+    change_lines = np.atleast_1d(change_lines)
+
+    xi = glodf(sys, change_lines)
+    
+    factor = xi.T @ flow_before[change_lines-1]
+    flow_after = flow_before + factor
+    
+    flow_after[change_lines-1] = 0
+    
+    return flow_after
+    
+def check_multi_outage():
+    print("\n\nChecking multi outage code...\n")
+    sys = get_sys_problem10()
+
+    # dc or ac
+    use_dc = False
+    
+    if use_dc:
+        # Y = create_Ybus(sys)
+        [v, theta, P, Q] = solve_dc(sys)
+        #solve_dc_output(sys, v, theta, P, Q)
+    else:
+        Y = create_Ybus(sys)
+        [V, S] = solve_ac(sys, Y)
+        # solve_ac_output(sys, V, S)
+        v = np.abs(V)
+        theta = np.angle(V)
+
+    f = calculate_line_flows(sys, v, theta)
+    print("power flows before:\n" + str(f[0]))
+    flow_after = flow_after_glodf(sys, [4,5], f[0])
+    print("take out line for with GLODF:\n" + str(flow_after))
+    
+    sys = get_sys_problem10_no45()
+    if use_dc:
+        # Y = create_Ybus(sys)
+        [v, theta, P, Q] = solve_dc(sys)
+        #solve_dc_output(sys, v, theta, P, Q)
+    else:
+        Y = create_Ybus(sys)
+        [V, S] = solve_ac(sys, Y)
+        # solve_ac_output(sys, V, S)
+        v = np.abs(V)
+        theta = np.angle(V)
+
+    f = calculate_line_flows(sys, v, theta)
+    print("system solved without line 4 or 5:\n" + str(np.insert(f[0], [3,3], [0,0])))
+
+'''
+###############################################################################
+# from slides
+def ptdf_from_slides(sys):
+    num_line = np.size(sys.line.no)
+    num_bus = np.size(sys.bus.no)
+    
+    ptdf = np.zeros((num_line, num_bus), dtype=np.complex128)
+    # ptdf = np.zeros((num_line, num_bus))
+    
+    Z = np.linalg.inv(create_Ybus(sys))
+    # X = np.imag(np.linalg.inv(create_Ybus(sys.line, sys.bus)))
+    
+    for i in range(num_bus):    
+        for j in range(num_line):
+            bfrom = sys.line.bfrom[j] - 1
+            bto   = sys.line.bto[j] - 1
+            z = sys.line.R[j] + 1j*sys.line.X[j]
+            # b = 1 / sys.line.X[j]
+            ptdf[j,i] = (Z[bfrom, i] - Z[bto, i]) / z
+            # ptdf[j,i] = (X[bfrom, i] - X[bto, i]) * b
+
+    return np.real(ptdf[:,1:])
+    # return ptdf[:,1:]
+'''
+if __name__ == "__main__":
+    np.set_printoptions(precision=5)
+    
+    check_single_outage()
+    
+    check_multi_outage()
     

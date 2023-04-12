@@ -104,7 +104,7 @@ def solve_ac(sys, Y):
         
         iters += 1
     
-    print("took " + str(iters+1) + " iterations")
+    print("took " + str(iters+1) + " iterations to solve the system")
     V = x[num_bus:2*num_bus] * np.exp(x[0:num_bus]*1.0j)
     S = V * np.conj(np.dot(Y, V))    
     return [V, S]

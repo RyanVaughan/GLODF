@@ -105,6 +105,26 @@ def get_sys_problem10_no4():
     
     return pwr_sys(bus, line)
 
+
+def get_sys_problem10_no45():
+    # problem 10
+    bus = Bus()
+    bus.add(1, 0, 1.05, 0,   0, 0,  0.25,  0.1)
+    bus.add(2, 1, 1.05, 0, 0.5, 0,  0.15, 0.05)
+    bus.add(3, 2, 1.00, 0,   0, 0, 0.275, 0.11)
+    bus.add(4, 2, 1.00, 0,   0, 0,     0,    0)
+    bus.add(5, 2, 1.00, 0,   0, 0,  0.15, 0.09)
+    bus.add(6, 2, 1.00, 0,   0, 0,  0.25, 0.15)
+
+    line = Line()
+    line.add(1, 1, 4, 0.020, 0.185, 0.009)
+    line.add(2, 1, 6, 0.031, 0.259, 0.010)
+    line.add(3, 2, 3, 0.006, 0.025, 0.000)
+    line.add(4, 3, 4, 0.075, 0.067, 0.000)
+    line.add(5, 5, 6, 0.025, 0.150, 0.017)
+    
+    return pwr_sys(bus, line)
+
 def get_sys_example3_11():
     # example 3.11
     bus = Bus()
